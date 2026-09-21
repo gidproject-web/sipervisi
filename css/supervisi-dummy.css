@@ -1,0 +1,25 @@
+
+.dummy-test-card{
+  margin:16px 0 8px;
+  border:1px dashed #e0b74e;
+  background:linear-gradient(135deg,#fffaf0,#fffdf7);
+}
+.dummy-test-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.dummy-badge{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#fff0c2;
+  color:#775400;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.06em;
+}
+@media(max-width:640px){
+  .dummy-test-head{flex-direction:column}
+}

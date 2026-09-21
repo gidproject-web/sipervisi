@@ -1,0 +1,67 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backup Supervisi</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/supervisi-v3.css">
+<link rel="stylesheet" href="../css/supervisi-v5-responsive.css">
+<link rel="stylesheet" href="../css/backup-supervisi.css">
+</head><body>
+<div class="app">
+<div class="sidebar">
+  <div class="logo">SIPERVISI SMANPA</div>
+  <div class="school">Dashboard Admin</div>
+  <div class="nav">
+    <a href="../dashboard.html">Dashboard</a>
+    <a href="master-guru.html">Master Guru</a>
+    <a href="master-supervisor.html">Master Supervisor</a>
+    <a href="penugasan.html">Penugasan</a>
+    <a href="jadwal-supervisi.html">Jadwal Supervisi</a>
+    <a class="active" href="backup-supervisi.html">Backup Supervisi</a>
+  </div>
+</div>
+
+<main class="main">
+<div class="topbar">
+  <div><h1>Backup Hasil Supervisi</h1><div class="subtitle">Cetak / simpan PDF hasil supervisi lengkap per guru atau seluruh hasil yang selesai</div></div>
+  <button id="logoutButton" class="btn btn-danger">Keluar</button>
+</div>
+
+<div class="grid grid-3">
+  <div class="card"><h3>Total Hasil</h3><div id="totalHasil" class="metric">0</div></div>
+  <div class="card"><h3>Supervisi Selesai</h3><div id="totalSelesai" class="metric">0</div></div>
+  <div class="card"><h3>Total Lampiran Foto</h3><div id="totalDokumentasi" class="metric">0</div></div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <div class="backup-toolbar">
+    <div class="form-group">
+      <label>Cari</label>
+      <input id="searchBackup" class="input" placeholder="Nama guru, supervisor, mapel">
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="filterStatus" class="input">
+        <option value="">Semua</option>
+        <option value="Terjadwal">Terjadwal</option>
+        <option value="Proses">Proses</option>
+        <option value="Selesai">Selesai</option>
+      </select>
+    </div>
+    <div class="backup-actions">
+      <button id="btnPrintAll" class="btn btn-primary">Cetak Semua yang Selesai</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>No</th><th>Tanggal</th><th>Guru</th><th>Supervisor</th><th>Mapel</th><th>Instrumen</th><th>Status</th><th>Foto</th><th>Aksi</th></tr></thead>
+      <tbody id="backupBody"><tr><td colspan="9">Memuat...</td></tr></tbody>
+    </table>
+  </div>
+  <p id="backupMessage" class="status"></p>
+</div>
+</main></div>
+<script type="module" src="../js/firebase-guard-pages-placeholder.js"></script>
+<script type="module" src="../js/backup-supervisi-admin.js"></script>
+<script type="module" src="../js/firebase-logout-pages.js"></script>
+<script type="module" src="../js/ui-v5.js"></script>
+</body></html>

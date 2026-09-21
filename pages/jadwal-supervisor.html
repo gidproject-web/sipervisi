@@ -1,0 +1,15 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Jadwal Supervisi</title><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/supervisi-v3.css"><link rel="stylesheet" href="../css/supervisi-v5-responsive.css"></head><body>
+<div class="app"><div class="sidebar"><div class="logo">SIPERVISI SMANPA</div><div class="school">Dashboard Supervisor</div><div class="nav"><a href="dashboard-supervisor.html">Dashboard</a><a href="guru-binaan.html">Guru Binaan</a><a href="jadwal-supervisor.html">Jadwal Supervisi</a><a href="status-supervisor.html">Status Supervisi</a></div></div>
+<main class="main"><div class="topbar"><div><h1>Jadwal Supervisi</h1><div class="subtitle">SIPERVISI SMANPA • SMA Negeri 4 Lubuklinggau</div></div><button id="logoutButton" class="btn btn-danger">Keluar</button></div><div class="grid grid-2">
+<div class="card"><h3>Buat / Edit Jadwal Supervisi</h3>
+<form id="jadwalForm"><input id="jadwal_id" type="hidden">
+<div class="form-group"><label>Guru Binaan</label><select id="penugasan_id" class="input" required></select></div>
+<div class="grid grid-2"><div class="form-group"><label>Tanggal</label><input id="tanggal" type="date" class="input" required></div><div class="form-group"><label>Jam</label><input id="jam" type="time" class="input" required></div></div>
+<div class="grid grid-2"><div class="form-group"><label>Kelas</label><input id="kelas" class="input" placeholder="Contoh: X.1"></div><div class="form-group"><label>Mata Pelajaran / Layanan</label><input id="mapel" class="input"></div></div>
+<div class="form-group"><label>Materi / Topik / Layanan</label><input id="materi" class="input"></div>
+<div class="form-group"><label>Jenis Instrumen</label><select id="jenis_instrumen" class="input"><option value="pembelajaran">Pembelajaran / Guru Mata Pelajaran</option><option value="bk">Guru BK</option></select></div>
+<div class="button-row"><button id="btnSimpan" class="btn btn-primary" type="submit">Simpan Jadwal</button><button id="btnBatalEdit" class="btn btn-secondary" type="button" style="display:none">Batal Edit</button></div>
+</form><p id="jadwalSupervisorMessage" class="status"></p></div>
+<div class="card"><h3>Total Jadwal Saya</h3><div id="totalJadwalSupervisor" class="metric">0</div><p class="muted">Jadwal dibuat oleh supervisor untuk guru binaan masing-masing.</p></div></div>
+<div class="card" style="margin-top:18px"><h3>Daftar Jadwal Supervisi</h3><div class="table-wrap"><table class="table"><thead><tr><th>No</th><th>Tanggal</th><th>Jam</th><th>Guru</th><th>Kelas</th><th>Mapel</th><th>Instrumen</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="jadwalSupervisorBody"><tr><td colspan="9">Memuat...</td></tr></tbody></table></div></div></main></div>
+<script type="module" src="../js/firebase-supervisor-guard.js"></script><script type="module" src="../js/supervisor-jadwal.js"></script><script type="module" src="../js/firebase-logout-pages.js"></script><script type="module" src="../js/ui-v5.js"></script></body></html>

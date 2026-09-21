@@ -1,0 +1,3 @@
+export const SUPABASE_URL = "https://gwnwxwwezixfuqmtwrrt.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3bnd4d3dleml4ZnVxbXR3cnJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MzA0NDEsImV4cCI6MjEwNTQwNjQ0MX0.SbDyiEPxhbivYbMF_m3oRwhR6MPezyg8aDZerIF3IJ4";
+export const SUPABASE_BUCKET = "dokumentasi-supervisi";

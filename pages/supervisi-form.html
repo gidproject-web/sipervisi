@@ -1,0 +1,73 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Form Supervisi</title><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/supervisi-v3.css"><link rel="stylesheet" href="../css/supervisi-v5-responsive.css"><link rel="stylesheet" href="../css/supervisi-v6.css"><link rel="stylesheet" href="../css/pilihan-umpan-balik.css"><link rel="stylesheet" href="../css/pilihan-observasi.css"></head><body>
+<div class="app"><div class="sidebar"><div class="logo">SIPERVISI SMANPA</div><div class="school">Dashboard Supervisor</div><div class="nav"><a href="dashboard-supervisor.html">Dashboard</a><a href="guru-binaan.html">Guru Binaan</a><a href="jadwal-supervisor.html">Jadwal Supervisi</a><a href="status-supervisor.html">Status Supervisi</a></div></div>
+<main class="main"><div class="topbar"><div><h1>Form Supervisi</h1><div class="subtitle">SIPERVISI SMANPA • SMA Negeri 4 Lubuklinggau</div></div><button id="logoutButton" class="btn btn-danger">Keluar</button></div><div class="card identity-card">
+<div class="identity-grid"><div><span>Guru</span><strong id="infoGuru">-</strong></div><div><span>Supervisor</span><strong id="infoSupervisor">-</strong></div><div><span>Tanggal</span><strong id="infoTanggal">-</strong></div><div><span>Kelas</span><strong id="infoKelas">-</strong></div><div><span>Mapel/Layanan</span><strong id="infoMapel">-</strong></div><div><span>Status</span><strong id="infoStatus">-</strong></div></div>
+<div style="margin-top:12px"><span class="muted">Materi/Topik:</span> <strong id="infoMateri">-</strong></div></div>
+<h2 id="judulInstrumen" class="section-title">Instrumen Supervisi</h2>
+<div id="panelPembelajaran">
+<div class="card section-card"><div class="section-head"><div><h3>Bagian 1 — Umpan Balik Perencanaan Pembelajaran</h3><p class="muted">Skala: 1 = hampir tidak ada, 2 = sedikit dan lemah, 3 = cukup, 4 = memadai.</p></div><div class="score-box"><small>Total</small><strong id="pTotal">0 / 60</strong><small>Nilai</small><strong id="pNilai">0.00</strong></div></div>
+<div class="table-wrap"><table class="table instrument-table"><thead><tr><th>No</th><th>Aspek yang diamati</th><th>Umpan Balik</th><th>Skala</th></tr></thead><tbody id="perencanaanBody"></tbody></table></div>
+<div class="form-group"><label>Kelebihan Perencanaan Pembelajaran</label><textarea id="p_kelebihan" class="input big-area"></textarea></div>
+<div class="form-group"><label>Hal yang perlu ditingkatkan dari Perencanaan Pembelajaran</label><textarea id="p_tingkatkan" class="input big-area"></textarea></div>
+<div class="form-group"><label>Rekomendasi perbaikan Perencanaan Pembelajaran sesuai prinsip PM</label><textarea id="p_rekomendasi" class="input big-area"></textarea></div>
+<div class="button-row"><button id="btnSavePerencanaan" class="btn btn-primary-lite">Simpan Bagian 1</button><button id="btnDocPerencanaan" class="btn btn-secondary">Unduh Word</button><button id="btnPdfPerencanaan" class="btn btn-secondary">Cetak / Simpan PDF</button></div></div>
+
+<div class="card section-card"><h3>Bagian 2 — Observasi Implementasi dan Refleksi</h3>
+<div class="table-wrap"><table class="table instrument-table"><thead><tr><th>No</th><th>Aspek yang diamati</th><th>Bukti Pembelajaran</th><th>Catatan</th></tr></thead><tbody id="observasiBody"></tbody></table></div>
+<div class="reflection-grid"><div class="form-group"><label>Pelajaran yang diperoleh dan faktor pendukung</label><textarea id="o_pelajaran" class="input big-area"></textarea></div><div class="form-group"><label>Hal yang belum memuaskan dan faktor penghambat</label><textarea id="o_belum" class="input big-area"></textarea></div><div class="form-group"><label>Rencana tindak lanjut untuk perbaikan ke depan</label><textarea id="o_tindak" class="input big-area"></textarea></div></div>
+<div class="button-row"><button id="btnSaveObservasi" class="btn btn-primary-lite">Simpan Bagian 2</button><button id="btnDocObservasi" class="btn btn-secondary">Unduh Word</button><button id="btnPdfObservasi" class="btn btn-secondary">Cetak / Simpan PDF</button></div></div>
+</div>
+
+<div id="panelBK" style="display:none">
+<div class="card section-card"><div class="section-head"><div><h3>Instrumen Supervisi Guru BK</h3><p class="muted">Masukkan skor 0–100 tiap aspek dan bukti fisik/catatan. Kategori nilai akhir mengikuti format instrumen BK yang diberikan.</p></div><div class="score-box"><small>Nilai Akhir</small><strong id="bkNilai">0.00</strong><small>Kategori</small><strong id="bkKategori">-</strong></div></div>
+<div class="table-wrap"><table class="table instrument-table"><thead><tr><th>No</th><th>Aspek Evaluasi</th><th>Skor</th><th>Bukti Fisik / Catatan</th></tr></thead><tbody id="bkBody"></tbody></table></div>
+<div class="form-group"><label>Rekomendasi kepada Guru</label><textarea id="bk_rek_guru" class="input big-area"></textarea></div>
+<div class="form-group"><label>Rekomendasi kepada Kepala</label><textarea id="bk_rek_kepala" class="input big-area"></textarea></div>
+<div class="form-group"><label>Catatan</label><textarea id="bk_catatan_umum" class="input big-area"></textarea></div>
+<div class="button-row"><button id="btnSaveBK" class="btn btn-primary-lite">Simpan Instrumen BK</button><button id="btnDocBK" class="btn btn-secondary">Unduh Word</button><button id="btnPdfBK" class="btn btn-secondary">Cetak / Simpan PDF</button></div></div>
+</div>
+
+
+<div class="card section-card dokumentasi-section">
+  <div class="section-head">
+    <div>
+      <h3>Bagian 3 — Lampiran / Dokumentasi Supervisi</h3>
+      <p class="muted">Unggah beberapa foto kegiatan supervisi. Maksimal 10 foto untuk setiap jadwal supervisi.</p>
+    </div>
+    <div class="score-box"><small>Foto</small><strong id="jumlahDokumentasi">0 / 10</strong></div>
+  </div>
+
+  <div class="documentation-form">
+    <div class="form-group">
+      <label>Kategori Foto</label>
+      <select id="dokumentasiKategori" class="input">
+        <option>Sebelum Supervisi</option>
+        <option selected>Saat Pembelajaran</option>
+        <option>Setelah / Refleksi</option>
+        <option>Lainnya</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Keterangan / Caption</label>
+      <textarea id="dokumentasiKeterangan" class="input" rows="3" placeholder="Contoh: Murid melakukan diskusi kelompok pada kegiatan inti."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Pilih Foto</label>
+      <input id="dokumentasiFiles" class="input" type="file" accept="image/*" multiple>
+      <small class="muted">Bisa memilih beberapa foto sekaligus. Foto otomatis diperkecil agar lebih ringan.</small>
+    </div>
+    <div class="button-row">
+      <button id="btnUploadDokumentasi" type="button" class="btn btn-primary-lite">Unggah Foto</button>
+      <button id="btnCetakDokumentasi" type="button" class="btn btn-secondary">Cetak Dokumentasi / PDF</button>
+    </div>
+    <p id="dokumentasiMessage" class="status"></p>
+  </div>
+
+  <div id="dokumentasiGallery" class="dokumentasi-gallery">
+    <div class="doc-empty">Memuat dokumentasi...</div>
+  </div>
+</div>
+
+<div class="card final-card"><h3>Penyelesaian dan Ekspor</h3><p class="muted">Setelah seluruh bagian terisi, tandai supervisi selesai.</p>
+<div class="button-row"><button id="btnFinalize" class="btn btn-success">Tandai Supervisi Selesai</button></div><p id="formMessage" class="status"></p></div></main></div>
+<script type="module" src="../js/firebase-supervisor-guard.js"></script><script type="module" src="../js/supervisi-form.js"></script><script type="module" src="../js/dokumentasi-supervisi.js"></script><script type="module" src="../js/firebase-logout-pages.js"></script><script type="module" src="../js/ui-v5.js"></script><script src="../js/ringkasan-ttd-hotfix.js"></script><script src="../js/pilihan-umpan-balik.js"></script><script src="../js/pilihan-observasi.js"></script></body></html>

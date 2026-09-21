@@ -1,0 +1,20 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hasil Supervisi Saya</title><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/supervisi-v3.css"><link rel="stylesheet" href="../css/supervisi-v4.css"><link rel="stylesheet" href="../css/supervisi-v5-responsive.css"></head>
+<body><div class="app"><div class="sidebar"><div class="logo">SIPERVISI SMANPA</div><div class="school">SMA Negeri 4 Lubuklinggau</div><div class="nav">
+<div class="nav-section">Sebagai Supervisor</div>
+<a href="dashboard-supervisor.html">Dashboard</a>
+<a href="guru-binaan.html">Guru Binaan</a>
+<a href="jadwal-supervisor.html">Jadwal Supervisi</a>
+<a href="status-supervisor.html">Status Supervisi</a>
+<div class="nav-section">Supervisi Saya</div>
+<a href="jadwal-saya-supervisor.html">Jadwal Saya</a>
+<a href="hasil-saya-supervisor.html">Hasil Supervisi Saya</a>
+</div></div>
+<main class="main"><div class="topbar"><div><h1>Hasil Supervisi Saya</h1><div class="subtitle">SIPERVISI SMANPA</div></div><button id="logoutButton" class="btn btn-danger">Keluar</button></div>
+
+<div class="card"><h3>Hasil Supervisi Saya</h3>
+<p class="muted">Nama: <strong id="namaGuruHasil">-</strong> • ID internal: <span id="idGuruHasil">-</span></p>
+<div class="table-wrap"><table class="table"><thead><tr><th>No</th><th>Tanggal</th><th>Supervisor</th><th>Mapel/Layanan</th><th>Kelas</th><th>Status</th><th>Hasil</th></tr></thead>
+<tbody id="hasilSayaBody"><tr><td colspan="7">Memuat...</td></tr></tbody></table></div>
+<p id="hasilSayaMessage" class="status"></p></div>
+</main></div><script type="module" src="../js/firebase-supervisor-guard.js"></script><script type="module" src="../js/hasil-saya.js"></script><script type="module" src="../js/firebase-logout-pages.js"></script><script type="module" src="../js/ui-v5.js"></script></body></html>

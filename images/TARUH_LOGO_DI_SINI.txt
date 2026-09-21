@@ -1,0 +1,16 @@
+LOGO SIPERVISI / SMANPA
+
+Taruh logo resmi SMA Negeri 4 Lubuklinggau di folder ini dengan nama tepat:
+
+logo-smanpa.png
+
+Contoh:
+images/logo-smanpa.png
+
+Jika file logo belum ada, website tetap berjalan dan menampilkan fallback huruf "S".
+
+Rekomendasi file logo:
+- PNG transparan
+- bentuk persegi
+- minimal 512 x 512 px
+- ukuran file sebaiknya di bawah 1 MB

@@ -1,0 +1,4 @@
+import { db } from "./firebase-config.js";
+import { collection,getDocs,doc,getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const tbody=document.getElementById("penugasanTableBody");
+(async()=>{try{const s=await getDocs(collection(db,"penugasan"));const rows=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.id.localeCompare(b.id));const out=[];for(const r of rows){const [sp,gp]=await Promise.all([getDoc(doc(db,"supervisors",r.supervisor_id)),getDoc(doc(db,"guru",r.guru_id))]);out.push({...r,snama:sp.exists()?sp.data().nama:r.supervisor_id,gnama:gp.exists()?gp.data().nama:r.guru_id})}tbody.innerHTML=out.map((r,i)=>`<tr><td>${i+1}</td><td>${r.id}</td><td>${r.snama}</td><td>${r.gnama}</td><td>${r.tahun_pelajaran||""}</td><td>${r.semester||""}</td><td><span class="badge">${r.status||"Aktif"}</span></td></tr>`).join("")}catch(e){tbody.innerHTML=`<tr><td colspan="7">${e.message}</td></tr>`}})();

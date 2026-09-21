@@ -1,0 +1,41 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Detail Hasil Supervisi</title><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/supervisi-v3.css"><link rel="stylesheet" href="../css/supervisi-v4.css"><link rel="stylesheet" href="../css/supervisi-v5-responsive.css"><link rel="stylesheet" href="../css/supervisi-v6.css"></head>
+<body><div class="app"><div class="sidebar"><div class="logo">SIPERVISI SMANPA</div><div class="school">SMA Negeri 4 Lubuklinggau</div><div class="nav"><a href="javascript:history.back()">← Kembali</a></div></div>
+<main class="main"><div class="topbar"><div><h1>Detail Hasil Supervisi</h1><div class="subtitle">SIPERVISI SMANPA</div></div><button id="logoutButton" class="btn btn-danger">Keluar</button></div>
+
+<div class="card identity-card"><div class="identity-grid">
+<div><span>Guru</span><strong id="detailGuru">-</strong></div>
+<div><span>Supervisor</span><strong id="detailSupervisor">-</strong></div>
+<div><span>Tanggal</span><strong id="detailTanggal">-</strong></div>
+<div><span>Kelas</span><strong id="detailKelas">-</strong></div>
+<div><span>Mapel/Layanan</span><strong id="detailMapel">-</strong></div>
+<div><span>Status</span><strong id="detailStatus">-</strong></div></div>
+<div style="margin-top:12px"><span class="muted">Materi/Topik:</span> <strong id="detailMateri">-</strong></div>
+<div class="result-actions"><button id="btnUnduhWord" class="btn btn-secondary">Unduh Hasil Word</button><button id="btnCetakPdf" class="btn btn-secondary">Cetak / Simpan PDF</button></div>
+<p id="detailMessage" class="status"></p></div>
+
+<div id="bagianPerencanaan" class="card result-block"><div class="section-head"><div><h3>Perencanaan Pembelajaran</h3></div><div class="score-box"><small>Nilai</small><strong id="nilaiPerencanaan">0.00</strong></div></div>
+<div class="table-wrap"><table class="table instrument-table"><thead><tr><th>No</th><th>Aspek</th><th>Umpan Balik</th><th>Skor</th></tr></thead><tbody id="perencanaanReadBody"></tbody></table></div>
+<h4>Kelebihan</h4><div id="kelebihanRead" class="read-box"></div><h4>Hal yang perlu ditingkatkan</h4><div id="tingkatkanRead" class="read-box"></div><h4>Rekomendasi</h4><div id="rekomendasiRead" class="read-box"></div></div>
+
+<div id="bagianObservasi" class="card result-block"><h3>Observasi Implementasi dan Refleksi</h3>
+<div class="table-wrap"><table class="table instrument-table"><thead><tr><th>No</th><th>Aspek</th><th>Bukti Pembelajaran</th><th>Catatan</th></tr></thead><tbody id="observasiReadBody"></tbody></table></div>
+<h4>Pelajaran yang diperoleh dan faktor pendukung</h4><div id="pelajaranRead" class="read-box"></div>
+<h4>Hal yang belum memuaskan dan faktor penghambat</h4><div id="belumRead" class="read-box"></div>
+<h4>Rencana tindak lanjut</h4><div id="tindakRead" class="read-box"></div></div>
+
+<div id="bagianBK" class="card result-block"><div class="section-head"><div><h3>Hasil Supervisi Guru BK</h3></div><div class="score-box"><small>Nilai</small><strong id="nilaiBKRead">0.00</strong><small>Kategori</small><strong id="kategoriBKRead">-</strong></div></div>
+<div class="table-wrap"><table class="table instrument-table"><thead><tr><th>No</th><th>Aspek</th><th>Skor</th><th>Bukti/Catatan</th></tr></thead><tbody id="bkReadBody"></tbody></table></div>
+<h4>Rekomendasi kepada Guru</h4><div id="rekGuruBKRead" class="read-box"></div>
+<h4>Rekomendasi kepada Kepala</h4><div id="rekKepalaBKRead" class="read-box"></div>
+<h4>Catatan</h4><div id="catatanBKRead" class="read-box"></div></div>
+
+<div id="bagianDokumentasi" class="card result-block">
+  <h3>Lampiran Dokumentasi Supervisi</h3>
+  <p class="muted">Dokumentasi yang diunggah oleh supervisor pada kegiatan supervisi ini.</p>
+  <div id="dokumentasiReadGallery" class="dokumentasi-gallery">
+    <div class="doc-empty">Belum ada dokumentasi.</div>
+  </div>
+</div>
+
+</main></div><script type="module" src="../js/hasil-detail.js"></script><script type="module" src="../js/firebase-logout-pages.js"></script><script type="module" src="../js/ui-v5.js"></script></body></html>
