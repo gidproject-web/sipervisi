@@ -70,6 +70,7 @@ async function loadJadwal(){
   const rows=snap.docs.map(d=>({id:d.id,...d.data()}))
     .sort((a,b)=>String(a.tanggal||"").localeCompare(String(b.tanggal||"")));
   jadwalCache=new Map(rows.map(x=>[x.id,x]));
+  window.dispatchEvent(new Event("sipervisi:jadwal-changed"));
   const out=[];
   for(const r of rows){
     const g=await getDoc(doc(db,"guru",r.guru_id));
