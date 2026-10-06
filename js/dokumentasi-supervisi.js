@@ -28,19 +28,54 @@ function formatBytes(bytes=0){
   if(bytes < 1024*1024) return (bytes/1024).toFixed(1)+" KB";
   return (bytes/(1024*1024)).toFixed(1)+" MB";
 }
+
 async function compressImage(file){
   if(!file.type.startsWith("image/")) throw new Error(`${file.name} bukan file gambar.`);
-  const bitmap = await createImageBitmap(file);
+
+  // Jalur utama: createImageBitmap (cepat di browser modern)
+  if(typeof createImageBitmap === "function"){
+    try{
+      const bitmap = await createImageBitmap(file);
+      const maxSide = 1800;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      bitmap.close?.();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", .82));
+      if(blob) return blob;
+    }catch(err){
+      console.warn("createImageBitmap gagal, memakai fallback Image()",err);
+    }
+  }
+
+  // Fallback Android / browser lama
+  const dataUrl = await new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>resolve(reader.result);
+    reader.onerror = ()=>reject(new Error(`Gagal membaca ${file.name}.`));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise((resolve,reject)=>{
+    const im = new Image();
+    im.onload = ()=>resolve(im);
+    im.onerror = ()=>reject(new Error(`Gagal membuka ${file.name}.`));
+    im.src = dataUrl;
+  });
+
   const maxSide = 1800;
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const w = Math.max(1, Math.round(bitmap.width * scale));
-  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const scale = Math.min(1, maxSide / Math.max(img.naturalWidth||img.width, img.naturalHeight||img.height));
+  const w = Math.max(1, Math.round((img.naturalWidth||img.width) * scale));
+  const h = Math.max(1, Math.round((img.naturalHeight||img.height) * scale));
   const canvas = document.createElement("canvas");
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close?.();
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", .84));
+  canvas.width=w; canvas.height=h;
+  canvas.getContext("2d").drawImage(img,0,0,w,h);
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve,"image/jpeg",.82));
   if(!blob) throw new Error(`Gagal memproses ${file.name}.`);
   return blob;
 }
@@ -53,21 +88,101 @@ function storageHeaders(extra={}){
   };
 }
 
-async function uploadToSupabase(path, blob){
-  const url = `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${encodeURI(path)}`;
-  const res = await fetch(url,{
-    method:"POST",
-    headers: storageHeaders({
-      "Content-Type":"image/jpeg",
-      "x-upsert":"false"
-    }),
-    body:blob
-  });
-  if(!res.ok){
-    const msg = await res.text();
-    throw new Error(`Supabase upload gagal (${res.status}): ${msg}`);
+
+function encodeStoragePath(path=""){
+  return String(path).split("/").map(seg=>encodeURIComponent(seg)).join("/");
+}
+
+function sleep(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+async function fetchWithTimeout(url, options={}, timeoutMs=25000){
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    return await fetch(url,{
+      ...options,
+      mode:"cors",
+      cache:"no-store",
+      credentials:"omit",
+      signal:controller.signal
+    });
+  }finally{
+    clearTimeout(timer);
   }
-  return await res.json();
+}
+
+function uploadWithXHR(url, blob){
+  return new Promise((resolve,reject)=>{
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST",url,true);
+    xhr.timeout=30000;
+    xhr.setRequestHeader("apikey",SUPABASE_ANON_KEY);
+    xhr.setRequestHeader("Authorization",`Bearer ${SUPABASE_ANON_KEY}`);
+    xhr.setRequestHeader("Content-Type","image/jpeg");
+    xhr.setRequestHeader("x-upsert","false");
+
+    xhr.onload=()=>{
+      if(xhr.status>=200 && xhr.status<300){
+        try{ resolve(JSON.parse(xhr.responseText||"{}")); }
+        catch{ resolve({}); }
+      }else{
+        reject(new Error(`Supabase upload gagal (${xhr.status}): ${xhr.responseText||"Tidak ada respons."}`));
+      }
+    };
+    xhr.onerror=()=>reject(new Error("Koneksi ke Supabase gagal. Browser tidak dapat menjangkau server penyimpanan."));
+    xhr.ontimeout=()=>reject(new Error("Upload foto terlalu lama dan dihentikan. Coba lagi dengan jaringan yang lebih stabil."));
+    xhr.send(blob);
+  });
+}
+
+async function uploadToSupabase(path, blob){
+  const url = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(SUPABASE_BUCKET)}/${encodeStoragePath(path)}`;
+
+  let lastError=null;
+
+  // Percobaan fetch sampai 3 kali
+  for(let attempt=1; attempt<=3; attempt++){
+    try{
+      const res = await fetchWithTimeout(url,{
+        method:"POST",
+        headers: storageHeaders({
+          "Content-Type":"image/jpeg",
+          "x-upsert":"false"
+        }),
+        body:blob
+      },30000);
+
+      if(!res.ok){
+        const msg = await res.text();
+        throw new Error(`Supabase upload gagal (${res.status}): ${msg}`);
+      }
+      return await res.json();
+    }catch(err){
+      lastError=err;
+      console.warn(`Upload fetch percobaan ${attempt} gagal`,err);
+      if(err?.name==="AbortError"){
+        lastError=new Error("Upload ke Supabase timeout.");
+      }
+      if(attempt<3) await sleep(900*attempt);
+    }
+  }
+
+  // Fallback untuk sebagian browser Android
+  try{
+    return await uploadWithXHR(url,blob);
+  }catch(xhrErr){
+    console.error("Fallback XHR juga gagal",xhrErr);
+  }
+
+  const detail = lastError?.message || "Failed to fetch";
+  if(/failed to fetch|networkerror|load failed|koneksi/i.test(detail)){
+    throw new Error(
+      "Tidak dapat terhubung ke penyimpanan foto Supabase. Coba matikan VPN/Private DNS/ad-blocker, ganti jaringan Wi‑Fi/data seluler, lalu coba lagi."
+    );
+  }
+  throw lastError || new Error("Upload foto gagal.");
 }
 
 async function deleteFromSupabase(path){
@@ -219,7 +334,8 @@ async function uploadPhotos(){
     showMessage("Foto dokumentasi berhasil diunggah ke Supabase.",false);
   }catch(e){
     console.error(e);
-    showMessage("Upload gagal: "+e.message,true);
+    console.error("UPLOAD FOTO ERROR", {message:e.message, supabase:SUPABASE_URL, online:navigator.onLine});
+    showMessage("Upload foto gagal: "+e.message,true);
   }finally{
     btn.disabled=false;
   }
