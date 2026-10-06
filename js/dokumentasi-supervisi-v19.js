@@ -1,4 +1,4 @@
-console.info("SIPERVISI V21 - restore upload foto lama aktif");
+console.info("SIPERVISI V22 - cetak dokumentasi 6 foto per halaman aktif");
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
