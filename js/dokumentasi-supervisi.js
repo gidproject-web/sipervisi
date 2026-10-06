@@ -1,32 +1,22 @@
-
+console.info("SIPERVISI Dokumentasi V20 - mode restore upload lama aktif");
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_BUCKET } from "./supabase-config.js";
-
-console.info("SIPERVISI Dokumentasi V19 aktif");
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }
-});
 
 const $ = id => document.getElementById(id);
 const jadwalId = new URLSearchParams(location.search).get("jadwal_id");
-const MAX_PHOTOS = 10;
 
-let currentUser = null;
 let userProfile = null;
 let jadwal = null;
 let dokumentasi = [];
-let contextReady = false;
+const MAX_PHOTOS = 10;
 
 function esc(v=""){
   return String(v ?? "").replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[m]));
 }
-function norm(v){ return String(v ?? "").trim().toUpperCase(); }
 function safeName(v="foto"){
   return String(v).toLowerCase()
     .replace(/[^a-z0-9._-]+/g,"-")
@@ -35,126 +25,100 @@ function safeName(v="foto"){
     .slice(0,80) || "foto";
 }
 function formatBytes(bytes=0){
-  if(bytes < 1024) return bytes+" B";
+  if(bytes < 1024) return bytes + " B";
   if(bytes < 1024*1024) return (bytes/1024).toFixed(1)+" KB";
   return (bytes/(1024*1024)).toFixed(1)+" MB";
 }
-function showMessage(message,isError=false){
-  const el=$("dokumentasiMessage");
-  if(!el) return;
-  el.textContent=message || "";
-  el.style.color=isError ? "#b42318" : "#25633e";
-}
-function galleryMessage(message){
-  const box=$("dokumentasiGallery");
-  if(box) box.innerHTML=`<div class="doc-empty">${esc(message)}</div>`;
-}
-
 async function compressImage(file){
-  if(!file?.type?.startsWith("image/")){
-    throw new Error(`${file?.name || "File"} bukan gambar.`);
-  }
-  const dataUrl=await new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>resolve(reader.result);
-    reader.onerror=()=>reject(new Error("File foto tidak dapat dibaca."));
-    reader.readAsDataURL(file);
-  });
-  const img=await new Promise((resolve,reject)=>{
-    const im=new Image();
-    im.onload=()=>resolve(im);
-    im.onerror=()=>reject(new Error("Foto tidak dapat dibuka browser."));
-    im.src=dataUrl;
-  });
-  const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
-  const maxSide=1600;
-  const scale=Math.min(1,maxSide/Math.max(iw,ih));
-  const canvas=document.createElement("canvas");
-  canvas.width=Math.max(1,Math.round(iw*scale));
-  canvas.height=Math.max(1,Math.round(ih*scale));
-  canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
-  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.82));
-  if(!blob) throw new Error("Gagal mengompres foto.");
+  if(!file.type.startsWith("image/")) throw new Error(`${file.name} bukan file gambar.`);
+  const bitmap = await createImageBitmap(file);
+  const maxSide = 1800;
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", .84));
+  if(!blob) throw new Error(`Gagal memproses ${file.name}.`);
   return blob;
 }
 
-async function testSupabase(){
-  try{
-    // list() cukup untuk memastikan browser dapat menjangkau Storage.
-    const { error } = await supabase.storage.from(SUPABASE_BUCKET).list("", { limit:1 });
-    if(error){
-      return {ok:false, message:`Supabase terjangkau, tetapi Storage menolak akses: ${error.message}`};
-    }
-    return {ok:true, message:"Supabase Storage terhubung."};
-  }catch(e){
-    return {ok:false, message:`Browser tidak dapat menjangkau Supabase: ${e?.message || e}`};
+function storageHeaders(extra={}){
+  return {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    ...extra
+  };
+}
+
+async function uploadToSupabase(path, blob){
+  const url = `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${encodeURI(path)}`;
+  const res = await fetch(url,{
+    method:"POST",
+    headers: storageHeaders({
+      "Content-Type":"image/jpeg",
+      "x-upsert":"false"
+    }),
+    body:blob
+  });
+  if(!res.ok){
+    const msg = await res.text();
+    throw new Error(`Supabase upload gagal (${res.status}): ${msg}`);
+  }
+  return await res.json();
+}
+
+async function deleteFromSupabase(path){
+  const url = `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${encodeURI(path)}`;
+  const res = await fetch(url,{
+    method:"DELETE",
+    headers: storageHeaders()
+  });
+  if(!res.ok && res.status!==404){
+    const msg=await res.text();
+    throw new Error(`Gagal menghapus file (${res.status}): ${msg}`);
   }
 }
 
-async function loadContext(){
-  if(!currentUser) throw new Error("Sesi login belum tersedia.");
-  if(!jadwalId) throw new Error("jadwal_id tidak ditemukan pada alamat halaman.");
-
-  const [us,j] = await Promise.all([
-    getDoc(doc(db,"users",currentUser.uid)),
-    getDoc(doc(db,"jadwal",jadwalId))
-  ]);
-
-  if(!us.exists()) throw new Error("Profil pengguna tidak ditemukan di collection users.");
-  if(!j.exists()) throw new Error("Jadwal supervisi tidak ditemukan.");
-
-  userProfile={uid:currentUser.uid,...us.data()};
-  jadwal={id:j.id,...j.data()};
-
-  const role=String(userProfile.role||userProfile.peran||"").trim().toLowerCase();
-  if(role!=="supervisor" && role!=="admin"){
-    throw new Error(`Akun ini berperan "${role || "-"}". Upload dokumentasi hanya untuk Supervisor/Admin.`);
+async function createSignedUrl(path, expiresIn=3600){
+  const url = `${SUPABASE_URL}/storage/v1/object/sign/${SUPABASE_BUCKET}/${encodeURI(path)}`;
+  const res = await fetch(url,{
+    method:"POST",
+    headers: storageHeaders({"Content-Type":"application/json"}),
+    body:JSON.stringify({expiresIn})
+  });
+  if(!res.ok){
+    const msg=await res.text();
+    throw new Error(`Gagal membuat URL foto (${res.status}): ${msg}`);
   }
-
-  // Normalisasi ID agar beda huruf besar/kecil/spasi tidak mematikan upload.
-  if(role==="supervisor" && norm(jadwal.supervisor_id)!==norm(userProfile.referensi_id)){
-    throw new Error(
-      `Jadwal ini tercatat untuk supervisor ${jadwal.supervisor_id || "-"}, `+
-      `sedangkan akun ini memiliki referensi ${userProfile.referensi_id || "-"}.`
-    );
-  }
-
-  const s=await getDoc(doc(db,"supervisi",jadwalId));
-  dokumentasi=s.exists() && Array.isArray(s.data().dokumentasi)
-    ? s.data().dokumentasi
-    : [];
-
-  contextReady=true;
+  const data=await res.json();
+  const signed=data.signedURL || data.signedUrl;
+  if(!signed) throw new Error("Signed URL tidak diterima dari Supabase.");
+  return signed.startsWith("http") ? signed : `${SUPABASE_URL}/storage/v1${signed}`;
 }
 
 async function saveMetadata(){
   await setDoc(doc(db,"supervisi",jadwalId),{
-    jadwal_id:jadwalId,
-    guru_id:jadwal.guru_id,
-    supervisor_id:jadwal.supervisor_id,
+    jadwal_id: jadwalId,
+    guru_id: jadwal.guru_id,
+    supervisor_id: jadwal.supervisor_id,
     dokumentasi,
-    updated_at:serverTimestamp()
+    updated_at: serverTimestamp()
   },{merge:true});
 }
 
-async function signedUrl(path){
-  const {data,error}=await supabase.storage.from(SUPABASE_BUCKET).createSignedUrl(path,3600);
-  if(error) throw error;
-  return data?.signedUrl || "";
-}
-
 async function render(){
-  const count=$("jumlahDokumentasi");
-  if(count) count.textContent=`${dokumentasi.length} / ${MAX_PHOTOS}`;
-
-  const box=$("dokumentasiGallery");
-  if(!box) return;
+  $("jumlahDokumentasi").textContent = `${dokumentasi.length} / ${MAX_PHOTOS}`;
+  const box = $("dokumentasiGallery");
   if(!dokumentasi.length){
-    box.innerHTML='<div class="doc-empty">Belum ada foto dokumentasi.</div>';
+    box.innerHTML = `<div class="doc-empty">Belum ada foto dokumentasi.</div>`;
     return;
   }
 
-  box.innerHTML=dokumentasi.map((x,i)=>`
+  box.innerHTML = dokumentasi.map((x,i)=>`
     <article class="doc-card" id="docCard${i}">
       <div class="doc-img-placeholder">Memuat foto...</div>
       <div class="doc-card-body">
@@ -177,91 +141,67 @@ async function render(){
 
   for(let i=0;i<dokumentasi.length;i++){
     try{
-      const url=await signedUrl(dokumentasi[i].storage_path);
-      const ph=$("docCard"+i)?.querySelector(".doc-img-placeholder");
-      if(ph) ph.outerHTML=`<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="Dokumentasi ${i+1}" loading="lazy"></a>`;
+      const url = await createSignedUrl(dokumentasi[i].storage_path,3600);
+      const card=$("docCard"+i);
+      const ph=card.querySelector(".doc-img-placeholder");
+      ph.outerHTML=`<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="Dokumentasi supervisi ${i+1}" loading="lazy"></a>`;
     }catch(e){
-      const ph=$("docCard"+i)?.querySelector(".doc-img-placeholder");
-      if(ph) ph.textContent="Foto gagal dimuat";
+      console.error(e);
+      $("docCard"+i).querySelector(".doc-img-placeholder").textContent="Foto gagal dimuat";
     }
   }
 
-  document.querySelectorAll(".doc-save").forEach(btn=>btn.addEventListener("click",async()=>{
-    try{
-      const i=Number(btn.dataset.index);
-      dokumentasi[i].kategori=document.querySelector(`.doc-category[data-index="${i}"]`).value;
-      dokumentasi[i].keterangan=document.querySelector(`.doc-caption[data-index="${i}"]`).value.trim();
-      await saveMetadata();
-      showMessage("Keterangan foto berhasil disimpan.");
-    }catch(e){
-      showMessage("Gagal menyimpan keterangan: "+e.message,true);
-    }
+  document.querySelectorAll(".doc-save").forEach(btn => btn.addEventListener("click", async ()=>{
+    const i = Number(btn.dataset.index);
+    dokumentasi[i].kategori = document.querySelector(`.doc-category[data-index="${i}"]`).value;
+    dokumentasi[i].keterangan = document.querySelector(`.doc-caption[data-index="${i}"]`).value.trim();
+    await saveMetadata();
+    showMessage("Keterangan foto berhasil disimpan.", false);
   }));
 
-  document.querySelectorAll(".doc-delete").forEach(btn=>btn.addEventListener("click",async()=>{
-    const i=Number(btn.dataset.index);
-    const item=dokumentasi[i];
+  document.querySelectorAll(".doc-delete").forEach(btn => btn.addEventListener("click", async ()=>{
+    const i = Number(btn.dataset.index);
+    const item = dokumentasi[i];
     if(!confirm(`Hapus Foto ${i+1}?`)) return;
     try{
-      if(item.storage_path){
-        const {error}=await supabase.storage.from(SUPABASE_BUCKET).remove([item.storage_path]);
-        if(error) throw error;
-      }
+      if(item.storage_path) await deleteFromSupabase(item.storage_path);
       dokumentasi.splice(i,1);
       await saveMetadata();
       await render();
-      showMessage("Foto dokumentasi dihapus.");
+      showMessage("Foto dokumentasi dihapus.", false);
     }catch(e){
+      console.error(e);
       showMessage("Gagal menghapus foto: "+e.message,true);
     }
   }));
 }
 
+function showMessage(message,isError=false){
+  const el=$("dokumentasiMessage");
+  el.textContent=message;
+  el.style.color=isError?"#b42318":"#25633e";
+}
+
 async function uploadPhotos(){
-  const btn=$("btnUploadDokumentasi");
-  const input=$("dokumentasiFiles");
-  const files=[...(input?.files||[])];
-
-  if(!files.length){
-    alert("Pilih minimal satu foto.");
-    return;
+  const input = $("dokumentasiFiles");
+  const files = [...(input.files||[])];
+  if(!files.length) return alert("Pilih minimal satu foto.");
+  if(dokumentasi.length + files.length > MAX_PHOTOS){
+    return alert(`Maksimal ${MAX_PHOTOS} foto per kegiatan supervisi. Saat ini sudah ada ${dokumentasi.length}.`);
   }
-
-  if(btn) btn.disabled=true;
+  const kategori = $("dokumentasiKategori").value;
+  const keterangan = $("dokumentasiKeterangan").value.trim();
+  const btn = $("btnUploadDokumentasi");
+  btn.disabled = true;
 
   try{
-    // Selalu muat ulang konteks ketika tombol diklik.
-    if(!contextReady) await loadContext();
-
-    const test=await testSupabase();
-    if(!test.ok) throw new Error(test.message);
-
-    if(dokumentasi.length+files.length>MAX_PHOTOS){
-      throw new Error(`Maksimal ${MAX_PHOTOS} foto. Saat ini sudah ada ${dokumentasi.length}.`);
-    }
-
-    const kategori=$("dokumentasiKategori")?.value || "Saat Pembelajaran";
-    const keterangan=$("dokumentasiKeterangan")?.value.trim() || "";
-
     for(let i=0;i<files.length;i++){
       const file=files[i];
-      showMessage(`Memproses foto ${i+1}/${files.length}: ${file.name}...`);
-      const blob=await compressImage(file);
-
-      const stamp=`${Date.now()}_${i}`;
-      const path=`${jadwalId}/dokumentasi/${stamp}_${safeName(file.name.replace(/\.[^.]+$/,""))}.jpg`;
-
-      showMessage(`Mengunggah foto ${i+1}/${files.length} ke Supabase...`);
-      const {error}=await supabase.storage
-        .from(SUPABASE_BUCKET)
-        .upload(path,blob,{
-          contentType:"image/jpeg",
-          upsert:false,
-          cacheControl:"3600"
-        });
-
-      if(error) throw new Error(`Supabase: ${error.message}`);
-
+      showMessage(`Mengunggah ${i+1} dari ${files.length}: ${file.name} ...`,false);
+      const blob = await compressImage(file);
+      const stamp = Date.now()+"_"+i;
+      const path = `${jadwalId}/dokumentasi/${stamp}_${safeName(file.name.replace(/\.[^.]+$/,""))}.jpg`;
+      await uploadToSupabase(path,blob);
       dokumentasi.push({
         id:"DOC"+stamp,
         kategori,
@@ -272,67 +212,82 @@ async function uploadPhotos(){
         storage_provider:"supabase",
         uploaded_at:new Date().toISOString()
       });
-
       await saveMetadata();
+      await render();
     }
-
-    if(input) input.value="";
-    if($("dokumentasiKeterangan")) $("dokumentasiKeterangan").value="";
-    await render();
-    showMessage("Foto dokumentasi berhasil diunggah.");
+    input.value="";
+    $("dokumentasiKeterangan").value="";
+    showMessage("Foto dokumentasi berhasil diunggah ke Supabase.",false);
   }catch(e){
-    console.error("UPLOAD FOTO V19",e);
-    showMessage("Upload foto gagal: "+(e?.message||e),true);
+    console.error(e);
+    showMessage("Upload gagal: "+e.message,true);
   }finally{
-    if(btn) btn.disabled=false;
+    btn.disabled=false;
   }
 }
 
-async function printDokumentasi(){
-  if(!contextReady) await loadContext();
+async function dokumentasiPrintHtml(){
   const items=[];
   for(let i=0;i<dokumentasi.length;i++){
-    let url="";
-    try{url=await signedUrl(dokumentasi[i].storage_path)}catch{}
     const x=dokumentasi[i];
-    items.push(`<div class="photo">${url?`<img src="${esc(url)}">`:""}<p><b>Foto ${i+1} — ${esc(x.kategori||"Dokumentasi")}</b><br>${esc(x.keterangan||"")}</p></div>`);
+    let url="";
+    try{url=await createSignedUrl(x.storage_path,3600)}catch{}
+    items.push(`
+      <div class="photo">
+        ${url?`<img src="${esc(url)}">`:""}
+        <p><b>Foto ${i+1} — ${esc(x.kategori||"Dokumentasi")}</b><br>${esc(x.keterangan||"")}</p>
+      </div>`);
   }
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Dokumentasi Supervisi</title>
-  <style>body{font-family:Arial;margin:30px}.photo{page-break-inside:avoid;margin-bottom:24px}.photo img{max-width:100%;max-height:560px;display:block;margin:auto}</style>
-  </head><body><h1>LAMPIRAN DOKUMENTASI SUPERVISI</h1>${items.join("")||"<p>Belum ada dokumentasi.</p>"}</body></html>`;
-  const w=window.open("","_blank");
-  if(!w) throw new Error("Pop-up diblokir browser.");
-  w.document.write(html); w.document.close(); w.focus();
-  setTimeout(()=>w.print(),700);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Dokumentasi Supervisi</title>
+  <style>
+  body{font-family:Arial,sans-serif;margin:30px;color:#111}h1{text-align:center;font-size:18pt}
+  .meta{margin-bottom:24px}.photo{page-break-inside:avoid;margin:0 0 24px}
+  .photo img{max-width:100%;max-height:560px;display:block;margin:0 auto 8px;border:1px solid #ccc}
+  .photo p{margin:6px 0;line-height:1.4}
+  @media print{body{margin:10mm}}
+  </style></head><body>
+  <h1>LAMPIRAN DOKUMENTASI SUPERVISI</h1>
+  <div class="meta">
+    <b>Guru:</b> ${esc($("infoGuru")?.textContent||jadwal.guru_id)}<br>
+    <b>Supervisor:</b> ${esc($("infoSupervisor")?.textContent||jadwal.supervisor_id)}<br>
+    <b>Tanggal:</b> ${esc($("infoTanggal")?.textContent||jadwal.tanggal||"-")}<br>
+    <b>Mapel/Layanan:</b> ${esc(jadwal.mapel||"-")}<br>
+  </div>${items.join("")||"<p>Belum ada dokumentasi.</p>"}</body></html>`;
 }
 
 $("btnUploadDokumentasi")?.addEventListener("click",uploadPhotos);
 $("btnCetakDokumentasi")?.addEventListener("click",async()=>{
-  try{await printDokumentasi()}
-  catch(e){showMessage("Gagal menyiapkan dokumentasi: "+e.message,true)}
+  const html=await dokumentasiPrintHtml();
+  const w=window.open("","_blank");
+  w.document.write(html);
+  w.document.close();w.focus();
+  setTimeout(()=>w.print(),1200);
 });
 
-galleryMessage("Menyiapkan dokumentasi...");
-showMessage("Pengecekan dokumentasi V19...");
-
 onAuthStateChanged(auth,async user=>{
-  currentUser=user;
-  if(!user){
-    galleryMessage("Menunggu sesi login...");
-    showMessage("Sesi login belum tersedia.",true);
-    return;
-  }
-
+  if(!user)return;
   try{
-    await loadContext();
+    if(!jadwalId) throw new Error("jadwal_id tidak ditemukan.");
+    const us=await getDoc(doc(db,"users",user.uid));
+    if(!us.exists()) throw new Error("Profil pengguna tidak ditemukan.");
+    userProfile={uid:user.uid,...us.data()};
+    if(String(userProfile.role||userProfile.peran||"").toLowerCase()!=="supervisor"){
+      throw new Error("Dokumentasi hanya dapat dikelola supervisor.");
+    }
+
+    const j=await getDoc(doc(db,"jadwal",jadwalId));
+    if(!j.exists()) throw new Error("Jadwal supervisi tidak ditemukan.");
+    jadwal={id:j.id,...j.data()};
+    if(jadwal.supervisor_id!==userProfile.referensi_id){
+      throw new Error("Jadwal ini bukan milik supervisor yang sedang login.");
+    }
+
+    const s=await getDoc(doc(db,"supervisi",jadwalId));
+    dokumentasi=s.exists() && Array.isArray(s.data().dokumentasi) ? s.data().dokumentasi : [];
     await render();
-    const test=await testSupabase();
-    showMessage(test.message,!test.ok);
   }catch(e){
-    console.error("INIT DOKUMENTASI V19",e);
-    contextReady=false;
-    galleryMessage("Dokumentasi belum dimuat. Tombol Unggah Foto tetap aktif untuk mencoba ulang.");
-    showMessage("Pemeriksaan awal gagal: "+e.message,true);
-    // sengaja tidak menonaktifkan tombol upload
+    console.error(e);
+    showMessage(e.message,true);
+    $("btnUploadDokumentasi").disabled=true;
   }
 });
